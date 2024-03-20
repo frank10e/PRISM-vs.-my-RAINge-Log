@@ -1,0 +1,62 @@
+---
+title: "PRISM_with_10_years"
+author: "Xiuchen"
+date: "2024-03-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(readxl)
+library(purrr)
+```
+```{r}
+# Set the working directory
+setwd("C:/Users/User/OneDrive/桌面/PRISM vs. my RAINge Log/PRISM vs. MyRAINge Log/data")
+
+# List all CSV files matching the pattern
+file_list <- list.files(pattern = "PRISM_.*_bil\\.stn\\.csv$", full.names = TRUE)
+
+# Read all CSV files, skipping the first line
+data_list <- lapply(file_list, function(file) {
+  read.csv(file, skip = 1, stringsAsFactors = FALSE)
+})
+
+column_names_list <- lapply(data_list, names)
+if(length(unique(column_names_list)) > 1) {
+  warning("Not all data frames have the same column names.")
+  # Print the differing column names if any
+  print(unique(column_names_list))
+  
+  # Standardize column names here before merging
+  # Define the standard column names based on the first data frame
+  standard_names <- column_names_list[[1]]  
+
+  # Apply the standard column names to all data frames
+  data_list <- lapply(data_list, function(df) {
+    colnames(df) <- standard_names
+    return(df)
+  })
+}
+
+# Now that all data frames have the same column names
+data_combined <- do.call(rbind, data_list)
+
+# View the combined data frame
+head(data_combined,10)
+
+```
+```{r}
+keywords <- c("Tucson", "Santa Rita", "Green Valley\\(AZ\\)")
+Tucson_Santa_Rita_Green_Valley <- data_combined %>%
+  filter(reduce(lapply(keywords, function(kw) grepl(kw, NAME, ignore.case = TRUE)), `|`))
+
+head(Tucson_Santa_Rita_Green_Valley, 10)
+```
+
